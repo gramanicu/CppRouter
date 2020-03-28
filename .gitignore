@@ -1,0 +1,7 @@
+router
+src/*.o
+.vscode*
+__pycache__
+hosts_output
+router_err.txt
+router_out.txt
