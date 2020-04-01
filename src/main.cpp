@@ -1,11 +1,8 @@
-#include <iostream>
-#include "RoutingTable.hpp"
+#include "Router.hpp"
 
-int main() {
-    RoutingTable rt;
+int main(int argc, char *argv[]) {
+    Router server;
+    server.run();
 
-    rt.readTable("rtable.txt");
-
-    std::cout << rt.getEntry(nstoi("192.168.0.0")) << "\n";
     return 0;
 }

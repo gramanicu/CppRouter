@@ -5,7 +5,7 @@
 
 # Compilation variables
 CC = g++
-CFLAGS = -Wno-unused-parameter -Wall -Wextra -pedantic -g -O3 -std=c++14
+CFLAGS = -Wno-unused-parameter -Wall -Wextra -pedantic -Wno-unknown-pragmas -g -O3 -std=c++14
 EXE = router
 SRC = $(wildcard */*.cpp)
 OBJ = $(SRC:.cpp=.o)
@@ -20,7 +20,7 @@ build: $(OBJ)
 
 %.o: %.cpp
 	$(CC) -o $@ -c $< $(CFLAGS) 
-
+	
 # Executes the binary
 run: clean build
 	./$(EXE)
@@ -34,6 +34,11 @@ clean:
 beauty:
 	clang-format -i -style=file */*.cpp
 	clang-format -i -style=file */*.hpp
+
+# Starts the virtual network:
+network:
+	-@sudo fuser -k 6653/tcp
+	sudo python3 topo.py
 
 # Checks the memory for leaks
 MFLAGS = --leak-check=full --show-leak-kinds=all --track-origins=yes

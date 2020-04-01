@@ -5,44 +5,11 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <sstream>
-#include <string>
 #include <unordered_map>
-#include <vector>
+#include "IpAdress.hpp"
+#include "Utils.hpp"
 
 #define uint uint32_t
-
-// Split a string using the specified delimitator
-std::vector<std::string> split(std::string s, char delim) {
-    std::stringstream stream(s);
-    std::string item;
-    std::vector<std::string> tokens;
-    while (getline(stream, item, delim)) {
-        tokens.push_back(item);
-    }
-    return tokens;
-}
-
-// Network adress string to integer
-// ex. 0.0.0.0 => 0
-uint nstoi(std::string adress) {
-    std::vector<std::string> ip_part = split(adress, '.');
-    return stoi(ip_part.at(0)) * 16777216 + stoi(ip_part.at(1)) * 65536 +
-           stoi(ip_part.at(2)) * 256 + stoi(ip_part.at(3));
-}
-
-// Integer to network adress string
-// ex. 0 => 0.0.0.0
-std::string itons(const int adress) {
-    using namespace std;
-    vector<string> ip_part(4);
-    ip_part[0] = to_string((adress >> 24) & 0xFF);
-    ip_part[1] = to_string((adress >> 16) & 0xFF);
-    ip_part[2] = to_string((adress >> 8) & 0xFF);
-    ip_part[3] = to_string(adress & 0xFF);
-    return ip_part[0] + "." + ip_part[1] + "." + ip_part[2] + "." + ip_part[3];
-}
-
 
 class Entry {
    private:
@@ -53,9 +20,9 @@ class Entry {
 
     // Convert the data from string to ints
     void parse() {
-        prefix = nstoi(sp);
-        next_hop = nstoi(sn);
-        mask = nstoi(sm);
+        prefix = IpAdress(sp);
+        next_hop = IpAdress(sn);
+        mask = IpAdress(sm);
         interface = stoi(si);
 
         // Clear the memory used by the strings
@@ -66,33 +33,29 @@ class Entry {
     }
 
    public:
-    uint prefix;
-    uint next_hop;
-    uint mask;
+    IpAdress prefix;
+    IpAdress next_hop;
+    IpAdress mask;
     int interface;
 
-    Entry() {
-        prefix = 0;
-        next_hop = 0;
-        mask = 0;
-        interface = 0;
-    }
+    Entry() { interface = 0; }
 
     Entry(std::string p, std::string n, std::string m, std::string i)
         : sp(p), sn(n), sm(m), si(i) {
         parse();
-    }
+    };
 
     bool operator>(const Entry& e) const { return (mask > e.mask); }
 
     friend std::ostream& operator<<(std::ostream& output, const Entry entry) {
-        output << itons(entry.prefix) << " " << itons(entry.next_hop) << " "
-               << itons(entry.mask) << " " << std::to_string(entry.interface);
+        output << entry.prefix << " " << entry.next_hop << " " << entry.mask
+               << " " << std::to_string(entry.interface);
         return output;
     }
 
     bool isEmpty() {
-        if (prefix == 0 && next_hop == 0 && mask == 0 && interface == 0) {
+        if (prefix.getAdress() == 0 && next_hop.getAdress() == 0 &&
+            mask.getAdress() == 0 && interface == 0) {
             return true;
         } else {
             return false;
@@ -128,12 +91,12 @@ class RoutingTable {
             std::vector<std::string> tokens(beg, end);
             Entry entry(tokens.at(0), tokens.at(1), tokens.at(2), tokens.at(3));
 
-            auto it = table.find(entry.prefix);
+            auto it = table.find(entry.prefix.getAdress());
             // Search if there is already a route to that destination
             if (it == table.end()) {
                 std::vector<Entry> v;
                 v.push_back(entry);
-                table[entry.prefix] = v;
+                table[entry.prefix.getAdress()] = v;
             } else {
                 // If there is one, update the routes
                 it->second.push_back(entry);
