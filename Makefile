@@ -16,7 +16,7 @@ build: $(OBJ)
 	@$(CC) -o $(EXE) $^ $(CFLAGS) ||:
 	$(info Compilation successfull)
 	-@rm -f *.o ||:
-	@$(MAKE) -s gitignore ||:
+	@$(MAKE) -s gitignore ||:// Copyright Grama Nicolae 2020
 
 %.o: %.cpp
 	$(CC) -o $@ -c $< $(CFLAGS) 
@@ -27,7 +27,7 @@ run: clean build
 
 # Deletes the binary and object files
 clean:
-	rm -f $(EXE) $(OBJ) CRouter.zip
+	rm -f $(EXE) $(OBJ) CppRouter.zip
 	echo "Deleted the binary and object files"
 
 # Automatic coding style, in my personal style
@@ -53,10 +53,11 @@ gitignore:
 	@echo "__pycache__" >> .gitignore ||:	
 	@echo "hosts_output" >> .gitignore ||:	
 	@echo "router_err.txt" >> .gitignore ||:	
-	@echo "router_out.txt" >> .gitignore ||:	
+	@echo "router_out.txt" >> .gitignore ||:
+	@echo "CppRouter.zip" >> .gitignore ||:		
 	echo "Updated .gitignore"
 	
 # Creates an archive of the project
 pack: clean
-	zip -FSr CRouter.zip *
+	zip -FSr CppRouter.zip Readme.md src/* Makefile
 

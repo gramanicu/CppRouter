@@ -84,10 +84,6 @@ int get_interface_mac(int interface, uint8_t *mac) {
 }
 
 void init() {
-    // interfaces.push_back(get_sock("r-0"));
-    // interfaces.push_back(get_sock("r-1"));
-    // interfaces.push_back(get_sock("r-2"));
-    // interfaces.push_back(get_sock("r-3"));
     interfaces[0] = get_sock("r-0");
     interfaces[1] = get_sock("r-1");
     interfaces[2] = get_sock("r-2");
@@ -126,6 +122,11 @@ int hwaddr_aton(const char *txt, uint8_t *addr) {
         if (i < 5 && *txt++ != ':') return -1;
     }
     return 0;
+}
+
+void init_packet(packet *pkt) {
+    memset(pkt->payload, 0, sizeof(pkt->payload));
+    pkt->len = 0;
 }
 
 uint16_t ip_checksum(void *vdata, size_t length) {

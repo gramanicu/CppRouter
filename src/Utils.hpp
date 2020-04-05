@@ -1,9 +1,14 @@
+// Copyright Grama Nicolae 2020
 #pragma once
 
+#include <linux/if_packet.h>
+#include <sys/types.h>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#define ETH_ALEN 6
 
 #define DIE(condition, message)                                 \
     do {                                                        \
@@ -13,6 +18,18 @@
             exit(1);                                            \
         }                                                       \
     } while (0)
+
+typedef struct {
+    unsigned short int ar_hrd;      /* Format of hardware address.  */
+    unsigned short int ar_pro;      /* Format of protocol address.  */
+    unsigned char ar_hln;           /* Length of hardware address.  */
+    unsigned char ar_pln;           /* Length of protocol address.  */
+    unsigned short int ar_op;       /* ARP opcode (command).  */
+    unsigned char ar_sha[ETH_ALEN]; /* Sender hardware address.  */
+    unsigned char ar_sip[4];        /* Sender IP address.  */
+    unsigned char ar_tha[ETH_ALEN]; /* Target hardware address.  */
+    unsigned char ar_tip[4];        /* Target IP address.  */
+} my_arphdr;
 
 // Split a string using the specified delimitator
 std::vector<std::string> split(std::string s, char delim) {
@@ -36,8 +53,8 @@ std::vector<std::string> split(std::string s, char delim) {
 // ex. 0.0.0.0 => 0
 uint nstoi(std::string adress) {
     std::vector<std::string> ip_part = split(adress, '.');
-    return stoi(ip_part.at(0)) * 16777216 + stoi(ip_part.at(1)) * 65536 +
-           stoi(ip_part.at(2)) * 256 + stoi(ip_part.at(3));
+    return stoi(ip_part.at(3)) * 16777216 + stoi(ip_part.at(2)) * 65536 +
+           stoi(ip_part.at(1)) * 256 + stoi(ip_part.at(0));
 }
 
 // Integer to network adress string
@@ -45,9 +62,18 @@ uint nstoi(std::string adress) {
 std::string itons(const uint adress) {
     using namespace std;
     vector<string> ip_part(4);
-    ip_part[0] = to_string((adress >> 24) & 0xFF);
-    ip_part[1] = to_string((adress >> 16) & 0xFF);
-    ip_part[2] = to_string((adress >> 8) & 0xFF);
-    ip_part[3] = to_string(adress & 0xFF);
-    return ip_part[0] + "." + ip_part[1] + "." + ip_part[2] + "." + ip_part[3];
+    ip_part[0] = to_string(adress & 0xFF);
+    ip_part[1] = to_string((adress >> 8) & 0xFF);
+    ip_part[2] = to_string((adress >> 16) & 0xFF);
+    ip_part[3] = to_string((adress >> 24) & 0xFF);
+    return ip_part[3] + "." + ip_part[2] + "." + ip_part[1] + "." + ip_part[0];
+}
+
+// Swap the values at the specified pointers (of a specified size)
+void swap(void* first, void* second, size_t size) {
+    unsigned char* buff = (unsigned char*)malloc(size);
+    memcpy(buff, first, size);
+    memcpy(first, second, size);
+    memcpy(second, buff, size);
+    free(buff);
 }

@@ -1,11 +1,10 @@
+// Copyright Grama Nicolae 2020
 #pragma once
 
-#include <linux/ip.h>
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <unordered_map>
 #include "IpAdress.hpp"
 #include "Utils.hpp"
 
@@ -20,9 +19,9 @@ class Entry {
 
     // Convert the data from string to ints
     void parse() {
-        prefix = IpAdress(sp);
-        next_hop = IpAdress(sn);
-        mask = IpAdress(sm);
+        prefix = IpAdress(inet_addr(sp.c_str()));
+        next_hop = IpAdress(inet_addr(sn.c_str()));
+        mask = IpAdress(inet_addr(sm.c_str()));
         interface = stoi(si);
 
         // Clear the memory used by the strings
@@ -45,7 +44,30 @@ class Entry {
         parse();
     };
 
-    bool operator>(const Entry& e) const { return (mask > e.mask); }
+    Entry(const Entry& other) {
+        prefix = other.prefix;
+        next_hop = other.next_hop;
+        mask = other.mask;
+        interface = other.interface;
+    }
+
+    bool operator>(const Entry& e) const {
+        if (prefix > e.prefix) {
+            return true;
+        } else if (prefix == e.prefix && mask > e.mask) {
+            return true;
+        }
+        return false;
+    }
+
+    bool operator<(const Entry& e) const {
+        if (prefix < e.prefix) {
+            return true;
+        } else if (prefix == e.prefix && mask < e.mask) {
+            return true;
+        }
+        return false;
+    }
 
     friend std::ostream& operator<<(std::ostream& output, const Entry entry) {
         output << entry.prefix << " " << entry.next_hop << " " << entry.mask
@@ -68,13 +90,31 @@ class RoutingTable {
     int size;
     std::ifstream input;
 
-    /*
-        I'm using a map to be able to get the routes in O(1) time complexity.
-        The keys will be the "prefixes", destination of the routes. Because
-        they are not unique, the search in the table will return all these
-        possible routes, and the router will choose the best.
-    */
-    std::unordered_map<uint, std::vector<Entry>> table;
+    std::vector<Entry> table;
+
+    bool isGoodEntry(int index, IpAdress ip) {
+        Entry e = table[index];
+        if (e.prefix.getAdress() == (ip.getAdress() & e.mask.getAdress())) {
+            return true;
+        }
+        return false;
+    }
+
+    // Binary search function to get the best route in O(log n) time
+    int binarySearch(int start, int end, IpAdress ip) {
+        if (start <= end) {
+            int mid = (start + end) / 2;
+
+            if (table[mid].prefix.getAdress() !=
+                (ip.getAdress() & table[mid].mask.getAdress())) {
+                return binarySearch(start, mid - 1, ip);
+            } else {
+                return binarySearch(mid + 1, end, ip);
+            }
+        }
+
+        return -1;
+    }
 
    public:
     RoutingTable() { size = 0; }
@@ -91,29 +131,65 @@ class RoutingTable {
             std::vector<std::string> tokens(beg, end);
             Entry entry(tokens.at(0), tokens.at(1), tokens.at(2), tokens.at(3));
 
-            auto it = table.find(entry.prefix.getAdress());
-            // Search if there is already a route to that destination
-            if (it == table.end()) {
-                std::vector<Entry> v;
-                v.push_back(entry);
-                table[entry.prefix.getAdress()] = v;
-            } else {
-                // If there is one, update the routes
-                it->second.push_back(entry);
-                std::sort(it->second.begin(), it->second.end(),
-                          std::greater<Entry>());
-            }
+            table.push_back(entry);
         }
+
+        // O(n log n) ascending order sorting of the table, based on the
+        // prefix. If they are equal, the first is the smaller mask
+        std::sort(table.begin(), table.end());
 
         input.close();
     }
 
     Entry getEntry(uint dest_ip) {
-        auto it = table.find(dest_ip);
-        if (it == table.end()) {
-            return Entry();
-        } else {
-            return it->second.at(0);
+        // THIS IS A BINARY SEARCH CODE. IT DIDN'T WORK WELL, SO I
+        // USED A ALGORITHM THAT ACTUALLY WORKS
+
+        // int index = binarySearch(0, table.size() - 1, dest_ip);
+        // uint mask, bestMask;
+
+        // if (index == -1) {
+        //     return Entry();
+        // }
+
+        // for(int i = index; i < table.size(); ++i) {
+        //     if(!isGoodEntry(i, dest_ip)) {
+        //         mask = table[i].mask.getAdress();
+        //     } else {
+        //         mask = 0;
+        //     }
+
+        //     if(mask >= bestMask) {
+        //         bestMask = mask;
+        //     } else {
+        //         return table[i-1];
+        //     }
+        // }
+
+        uint maxMask = 0;
+        for (uint i = 0; i < table.size(); ++i) {
+            if (isGoodEntry(i, dest_ip)) {
+                if (table[i].next_hop == dest_ip) {
+                    return table[i];
+                }
+
+                if (table[i].mask.getAdress() > maxMask) {
+                    maxMask = table[i].mask.getAdress();
+                } else {
+                    if (maxMask != 0) {
+                        // Found the max, return
+                        return table[i - 1];
+                    }
+                }
+            }
+        }
+
+        return Entry();
+    }
+
+    void print() {
+        for (auto& i : table) {
+            std::cout << i << "\n";
         }
     }
 };

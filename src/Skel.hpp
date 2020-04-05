@@ -36,6 +36,7 @@ typedef struct {
 
 extern int interfaces[ROUTER_NUM_INTERFACES];
 
+void init_packet(packet *pkt);
 int send_packet(int interface, packet *m);
 int get_packet(packet *m);
 char *get_interface_ip(int interface);

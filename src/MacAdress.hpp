@@ -1,3 +1,4 @@
+// Copyright Grama Nicolae 2020
 #pragma once
 
 #include <string>
@@ -47,6 +48,26 @@ class MacAdress {
     }
 
     std::string part(int id) { return readable(_part[id]); }
+
+    uchar charPart(int id) { return _part[id]; }
+
+    bool isEmpty() {
+        for (int i = 0; i < 6; ++i) {
+            if (_part[i] != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool operator==(const MacAdress& other) const {
+        for (int i = 0; i < 6; ++i) {
+            if (_part[i] != other._part[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     friend std::ostream& operator<<(std::ostream& output, const MacAdress mac) {
         for (int i = 0; i < 5; ++i) {
